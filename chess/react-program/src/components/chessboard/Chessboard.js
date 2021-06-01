@@ -9,14 +9,14 @@ var wasmSupported = typeof WebAssembly === 'object' && WebAssembly.validate(Uint
 var stockfish = new Worker(wasmSupported ? 'stockfish.wasm.js' : 'stockfish.js');
 
 
-stockfish.onmessage = function(event) {
+stockfish.onmessage = function (event) {
     //NOTE: Web Workers wrap the response in an object.
     console.log(event.data ? event.data : event);
 };
 
 stockfish.addEventListener('message', function (e) {
     console.log(e.data);
-  });
+});
 
 var game = new Chess();
 
@@ -35,6 +35,7 @@ const Chessboard = () => {
     const [positionL, setPieces] = useState(startPosition);
     const [hints, setHints] = useState([]);
     const [activePiece, setActivePiece] = useState(null);
+    const [lastClicked, setLastClicked] = useState();
 
     // stockfish.onmessage = function (event) {
     //     console.log(event.data ? event.data : event)
@@ -65,7 +66,7 @@ const Chessboard = () => {
         for (let index = 0; index < positionL.length; index++) {
             const notation = fen[counter];
             const p = positionL[index];
-            console.log(notation)
+            
             if (notation === "k") {
                 p.color = "black";
                 p.image = "./assets/black_king.svg";
@@ -138,13 +139,72 @@ const Chessboard = () => {
         }
     }
 
+    function move(from, to) {
+        var move = game.move({
+            from: from,
+            to: to,
+            promotion: 'q'
+        })
+
+        if (move !== null) {
+            console.log("move")
+            console.log(game.fen())
+            loadFen(game.fen())
+            hints.length = 0;
+            var fromColor;
+            var toColor;
+            if (game.turn() === "w") {
+                fromColor = "white"
+                toColor = "black"
+            } else {
+                fromColor = "black"
+                toColor = "white"
+            }
+            if (game.in_check()) {
+
+                const king = positionL.find(p => p.color !== toColor && p.color !== undefined && p.piece === "king")
+
+                king.check = true;
+            } else {
+                positionL.forEach(p => {
+                    p.check = false;
+                    if (move.promotion === 'q') {
+                        p.piece = "queen";
+                        p.image = `./assets/${toColor}_queen.svg`
+                    }
+                })
+            }
+            
+        } else {
+            if (activePiece !== null) {
+                activePiece.style.position = "static";
+                activePiece.style.removeProperty('top');
+                activePiece.style.removeProperty('left');
+            }
+            
+                
+            
+
+        }
+
+        setActivePiece(null);
+
+    }
+
     function grabPiece(e) {
         if (e.button < 2) {
             const element = e.target;
-
-
-
+           
+            
+            if (lastClicked !== null && elementClicked !== null) {
+                const chessboard = chessboardRef.current;
+                let mousePosition = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
+                console.log(lastClicked)
+                move(lastClicked.id, mousePosition)
+                setLastClicked(null)
+            } 
             if (element.classList.contains("piece")) {
+                setLastClicked(element)
                 const x = e.clientX - 50;
                 const y = e.clientY - 50;
                 element.style.position = "absolute";
@@ -169,7 +229,7 @@ const Chessboard = () => {
                 console.log(possibleMoves)
                 positionL.forEach(p => {
                     if (notation.includes(p.position)) {
-                        hints.push({position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35});
+                        hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
 
                     }
 
@@ -182,7 +242,7 @@ const Chessboard = () => {
         } else if (e.button === 2) {
             // console.log("click")
             // loadFen("8/8/8/4p1K1/2k1P3/8/8/8")
-            
+
 
 
         }
@@ -239,180 +299,7 @@ const Chessboard = () => {
         if (activePiece !== null) {
             let mousePosition = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
 
-            // var from;
-            // var to;
-            // var fromPosition;
-            // var toPosition;
-            // var fromColor;
-            // var toColor;
-            // var fromPiece;
-            // var toPiece;
-
-            // positionL.forEach(p => {
-
-            //     if (p !== undefined && p.position === e.target.id) {
-
-            //         from = p;
-            //         fromPosition = p.position;
-            //         fromColor = p.color;
-            //         fromPiece = p.piece;
-            //     }
-            //     if (p !== undefined && p.position === mousePosition) {
-            //         to = p;
-            //         toPosition = p.position;
-            //         toColor = p.color;
-            //         toPiece = p.piece;
-            //     }
-            // })
-
-            var move = game.move({
-                from: activePiece.id,
-                to: mousePosition,
-                promotion: 'q'
-            })
-            // console.log(activePiece.id)
-            // console.log(mousePosition)
-            // console.log(move)
-
-
-
-            if (move !== null) {
-                loadFen(game.fen())
-                hints.length = 0;
-                // // // gives the new position
-                // // stockfish.postMessage("position fen " + game.fen());
-                // // // starts search for move
-                // // stockfish.postMessage("go depth 10");
-                
-                // // console.log(game.fen())
-
-                // positionL.forEach(p => {
-                //     if (p.color !== fromColor && p.color !== undefined && p.piece === "king") {
-                //         console.log(p)
-                //     }
-
-                // })
-
-                // if (move.san === "O-O" || move.san === "O-O-O") {
-                //     positionL.forEach(p => {
-                //         p.justmoved = false;
-                //     })
-
-                //     to.image = from.image
-                //     from.image = undefined;
-                //     to.color = fromColor;
-                //     from.color = undefined;
-
-                //     to.piece = fromPiece;
-
-                //     from.piece = undefined;
-                //     console.log(fromPiece)
-                //     console.log(from)
-                //     console.log(to)
-
-
-                //     var rookFrom;
-                //     var rookTo;
-
-                //     if (move.san === "O-O") {
-                //         if (fromColor === "white") {
-                //             rookFrom = positionL[63];
-                //             rookTo = positionL[61];
-                //         } else {
-                //             rookFrom = positionL[7];
-                //             rookTo = positionL[5];
-                //         }
-                //     } else {
-                //         if (fromColor === "white") {
-                //             rookFrom = positionL[56];
-                //             rookTo = positionL[59];
-                //         } else {
-                //             rookFrom = positionL[0];
-                //             rookTo = positionL[3];
-                //         }
-                //     }
-
-                //     rookTo.image = `./assets/${fromColor}_rook.svg`;
-                //     rookTo.color = fromColor;
-                //     rookTo.piece = "rook";
-
-                //     rookFrom.image = undefined;
-                //     rookFrom.color = undefined;
-                //     rookFrom.piece = undefined;
-
-                //     to.justmoved = true;
-                //     from.justmoved = true;
-
-
-                // } else {
-                //     to.image = from.image
-                //     from.image = undefined;
-                //     to.color = fromColor;
-                //     from.color = undefined;
-                //     to.piece = fromPiece;
-                //     from.piece = undefined;
-
-                //     if (game.in_check()) {
-                //         const king = positionL.find(p => p.color !== fromColor && p.color !== undefined && p.piece === "king")
-
-                //         king.check = true;
-                //     } else {
-                //         positionL.forEach(p => {
-                //             p.check = false;
-                //         })
-                //     }
-
-                //     if (move.promotion === 'q') {
-                //         to.piece = "queen";
-                //         to.image = `./assets/${to.color}_queen.svg`
-                //     }
-
-                //     positionL.forEach(p => {
-                //         p.justmoved = false;
-                //     })
-
-                //     const goingLeft = xAxis[xAxis.indexOf(fromPosition.charAt(0)) - 1] === toPosition.charAt(0);
-                //     const goingRight = xAxis[xAxis.indexOf(fromPosition.charAt(0)) + 1] === toPosition.charAt(0);
-
-                //     var leftSquare;
-                //     var rightSqaure;
-                //     positionL.forEach(p => {
-                //         if (goingLeft && p.position === xAxis[xAxis.indexOf(fromPosition.charAt(0)) - 1] + fromPosition.charAt(1)
-                //             && p.color === "black" && p.piece === "pawn" && lastmoveWasDoublePawnMove) {
-                //             leftSquare = p;
-                //             console.log(p)
-                //         }
-
-                //         if (goingRight && p.position === xAxis[xAxis.indexOf(fromPosition.charAt(0)) + 1] + fromPosition.charAt(1)
-                //             && p.color === "black" && p.piece === "pawn" && lastmoveWasDoublePawnMove) {
-                //             leftSquare = p;
-                //             console.log(p)
-                //         }
-                //     })
-
-                //     var passedOtherColor = fromColor === "white" && leftSquare !== undefined;
-                //     if (passedOtherColor) {
-                //         leftSquare.image = undefined;
-                //     }
-
-                //     if (fromPiece === "pawn" && (parseInt(fromPosition.charAt(1)) - 2 === parseInt(toPosition.charAt(1))
-                //         || parseInt(fromPosition.charAt(1)) + 2 === parseInt(toPosition.charAt(1)))) {
-                //         lastmoveWasDoublePawnMove = true;
-                //     } else {
-
-                //         lastmoveWasDoublePawnMove = false;
-                //     }
-
-                //     to.justmoved = true;
-                //     from.justmoved = true;
-                // }
-            } else {
-                activePiece.style.position = "static";
-                activePiece.style.removeProperty('top');
-                activePiece.style.removeProperty('left');
-            }
-
-            setActivePiece(null);
+            move(activePiece.id, mousePosition)
         }
 
     }
