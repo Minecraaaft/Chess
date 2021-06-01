@@ -36,25 +36,25 @@ const Chessboard = () => {
     const [hints, setHints] = useState([]);
     const [activePiece, setActivePiece] = useState(null);
 
-    stockfish.onmessage = function (event) {
-        console.log(event.data ? event.data : event)
-        console.log("hey")
-        // 
-        if (event.data.substring(0, 8) == "bestmove") {
-            game.move({
-                from: event.data.substring(9, 11),
-                to: event.data.substring(11, 13),
-                promotion: 'q' // NOTE: always promote to a queen for example simplicity
-            })
-            loadFen(game.fen())
+    // stockfish.onmessage = function (event) {
+    //     console.log(event.data ? event.data : event)
+    //     console.log("hey")
+    //     // 
+    //     if (event.data.substring(0, 8) == "bestmove") {
+    //         game.move({
+    //             from: event.data.substring(9, 11),
+    //             to: event.data.substring(11, 13),
+    //             promotion: 'q' // NOTE: always promote to a queen for example simplicity
+    //         })
+    //         loadFen(game.fen())
 
 
-        }
-    }
-    stockfish.postMessage("uci");
-    stockfish.postMessage("setoption name skill level value " + 5);
-    stockfish.postMessage("setoption name Skill Level Maximum error value " + 100);
-    stockfish.postMessage("setoption name Skill Level Probability value " + 234);
+    //     }
+    // }
+    // stockfish.postMessage("uci");
+    // stockfish.postMessage("setoption name skill level value " + 5);
+    // stockfish.postMessage("setoption name Skill Level Maximum error value " + 100);
+    // stockfish.postMessage("setoption name Skill Level Probability value " + 234);
 
 
 
@@ -169,7 +169,7 @@ const Chessboard = () => {
                 console.log(possibleMoves)
                 positionL.forEach(p => {
                     if (notation.includes(p.position)) {
-                        //hints.push({position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100});
+                        hints.push({position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35});
 
                     }
 
@@ -239,48 +239,52 @@ const Chessboard = () => {
         if (activePiece !== null) {
             let mousePosition = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
 
-            var from;
-            var to;
-            var fromPosition;
-            var toPosition;
-            var fromColor;
-            var toColor;
-            var fromPiece;
-            var toPiece;
+            // var from;
+            // var to;
+            // var fromPosition;
+            // var toPosition;
+            // var fromColor;
+            // var toColor;
+            // var fromPiece;
+            // var toPiece;
 
-            positionL.forEach(p => {
+            // positionL.forEach(p => {
 
-                if (p !== undefined && p.position === e.target.id) {
+            //     if (p !== undefined && p.position === e.target.id) {
 
-                    from = p;
-                    fromPosition = p.position;
-                    fromColor = p.color;
-                    fromPiece = p.piece;
-                }
-                if (p !== undefined && p.position === mousePosition) {
-                    to = p;
-                    toPosition = p.position;
-                    toColor = p.color;
-                    toPiece = p.piece;
-                }
-            })
+            //         from = p;
+            //         fromPosition = p.position;
+            //         fromColor = p.color;
+            //         fromPiece = p.piece;
+            //     }
+            //     if (p !== undefined && p.position === mousePosition) {
+            //         to = p;
+            //         toPosition = p.position;
+            //         toColor = p.color;
+            //         toPiece = p.piece;
+            //     }
+            // })
 
             var move = game.move({
-                from: fromPosition,
-                to: toPosition,
+                from: activePiece.id,
+                to: mousePosition,
                 promotion: 'q'
             })
+            // console.log(activePiece.id)
+            // console.log(mousePosition)
+            // console.log(move)
 
 
 
             if (move !== null) {
-
-                // gives the new position
-                stockfish.postMessage("position fen " + game.fen());
-                // starts search for move
-                stockfish.postMessage("go depth 10");
+                loadFen(game.fen())
+                hints.length = 0;
+                // // // gives the new position
+                // // stockfish.postMessage("position fen " + game.fen());
+                // // // starts search for move
+                // // stockfish.postMessage("go depth 10");
                 
-                console.log(game.fen())
+                // // console.log(game.fen())
 
                 // positionL.forEach(p => {
                 //     if (p.color !== fromColor && p.color !== undefined && p.piece === "king") {
