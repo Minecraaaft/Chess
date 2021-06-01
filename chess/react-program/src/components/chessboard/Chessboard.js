@@ -66,7 +66,7 @@ const Chessboard = () => {
         for (let index = 0; index < positionL.length; index++) {
             const notation = fen[counter];
             const p = positionL[index];
-            
+
             if (notation === "k") {
                 p.color = "black";
                 p.image = "./assets/black_king.svg";
@@ -137,6 +137,27 @@ const Chessboard = () => {
             counter++;
 
         }
+        const currentTurn = game.turn();
+        console.log(currentTurn)
+
+
+        if (game.in_check()) {
+            const king = positionL.find(p => p.color !== undefined && p.color.charAt(0) === currentTurn && p.piece === "king")
+            king.check = true;
+        } else {
+            positionL.forEach(p => {
+                p.check = false;
+                if (move.promotion === 'q') {
+                    p.piece = "queen";
+                    if (currentTurn = "w") {
+                        p.image = `./assets/white_queen.svg`
+                    } else {
+                        p.image = `./assets/black_queen.svg`
+                    }
+                }
+            })
+        }
+
     }
 
     function move(from, to) {
@@ -160,30 +181,17 @@ const Chessboard = () => {
                 fromColor = "black"
                 toColor = "white"
             }
-            if (game.in_check()) {
 
-                const king = positionL.find(p => p.color !== toColor && p.color !== undefined && p.piece === "king")
 
-                king.check = true;
-            } else {
-                positionL.forEach(p => {
-                    p.check = false;
-                    if (move.promotion === 'q') {
-                        p.piece = "queen";
-                        p.image = `./assets/${toColor}_queen.svg`
-                    }
-                })
-            }
-            
         } else {
             if (activePiece !== null) {
                 activePiece.style.position = "static";
                 activePiece.style.removeProperty('top');
                 activePiece.style.removeProperty('left');
             }
-            
-                
-            
+
+
+
 
         }
 
@@ -194,15 +202,16 @@ const Chessboard = () => {
     function grabPiece(e) {
         if (e.button < 2) {
             const element = e.target;
-           
             
+
+
             if (lastClicked !== null && elementClicked !== null) {
                 const chessboard = chessboardRef.current;
                 let mousePosition = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
                 console.log(lastClicked)
                 move(lastClicked.id, mousePosition)
                 setLastClicked(null)
-            } 
+            }
             if (element.classList.contains("piece")) {
                 setLastClicked(element)
                 const x = e.clientX - 50;
@@ -227,10 +236,22 @@ const Chessboard = () => {
                     notation[i] = possibleMoves[i].replace(/[RQKBN+#]/g, m => chars[m]);
                 }
                 console.log(possibleMoves)
+                const currentTurn = game.turn();
                 positionL.forEach(p => {
                     if (notation.includes(p.position)) {
+                        console.log()
                         hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
 
+                    }
+                    
+                    if (possibleMoves.includes("O-O")) {
+                        if (currentTurn === "w" && p.position === "g1" || currentTurn === "b" && p.position === "g8") {
+                            hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
+                        } 
+                    } else if (possibleMoves.includes("O-O-O")) {
+                        if (currentTurn === "w" && p.position === "c1" || currentTurn === "b" && p.position === "c8") {
+                            hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
+                        } 
                     }
 
                 })
