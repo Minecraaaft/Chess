@@ -190,7 +190,13 @@ body {
   box-sizing: border-box;
 }
 
-
+.capture {
+  border: 10px solid rgba(0, 0, 0, 0.25);
+  height: 100px;
+  width: 100px;
+  border-radius: 50%;
+  box-sizing: border-box;
+}
 
  .black.moved {
   background-color:rgb(171, 162, 58);

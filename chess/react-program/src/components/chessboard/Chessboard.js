@@ -17,6 +17,7 @@ const Chessboard = () => {
 
     const [positionL, setPieces] = useState(startPosition);
     const [hints, setHints] = useState([]);
+    const [captures, setConst] = useState([]);
     const [activePiece, setActivePiece] = useState(null);
     const [lastClicked, setLastClicked] = useState();
 
@@ -99,7 +100,7 @@ const Chessboard = () => {
 
         }
 
-        
+
         const currentTurn = game.turn();
 
         if (game.in_check()) {
@@ -130,6 +131,7 @@ const Chessboard = () => {
         if (move !== null) {
             loadFen(game.fen())
             hints.length = 0;
+            captures.length = 0;
         } else {
             if (activePiece !== null) {
                 activePiece.style.position = "static";
@@ -168,14 +170,22 @@ const Chessboard = () => {
 
                 var possibleMoves = game.moves({ square: elementClicked.position });
                 hints.length = 0;
+                captures.length = 0;
                 var notation = []
                 var chars = { "B": "", "N": "", "+": "", "#": "", "Q": "", "K": "", "R": "" }
+
+
                 for (let i = 0; i < possibleMoves.length; i++) {
                     notation[i] = possibleMoves[i].replace(/[RQKBN+#]/g, m => chars[m]);
                 }
-                console.log(possibleMoves)
+                console.log(notation)
                 const currentTurn = game.turn();
                 positionL.forEach(p => {
+                    notation.forEach(n => {
+                        if (n.includes("x") && n.includes(p.position)) {
+                            captures.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 })
+                        }
+                    })
                     if (notation.includes(p.position)) {
                         hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
                     }
@@ -264,9 +274,14 @@ const Chessboard = () => {
             counter++;
         }
     }
-    hints.forEach(h => {
-        board.push(<MoveHint key={h.left + h.top} position={h.position} left={h.left} top={h.top}></MoveHint>)
+    let keyCounter = 1337;
 
+    hints.forEach(h => {
+        board.push(<MoveHint capture={false} key={"hint"  + " " + keyCounter} position={h.position} left={h.left} top={h.top}></MoveHint>)
+        counter++;
+    })
+    captures.forEach(h => {
+        board.push(<MoveHint capture={true} key={"capture " + " " + keyCounter} position={h.position} left={h.left} top={h.top}></MoveHint>)
     })
     return (
         <div
