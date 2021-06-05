@@ -183,19 +183,21 @@ body {
 }
 
 .moveHint {
-  border: 15px solid rgba(0, 0, 0, 0.25);
+  border: 15px solid rgba(0, 0, 0, 0.15);
   height: 20px;
   width: 20px;
   border-radius: 50%;
   box-sizing: border-box;
+  pointer-events: none;
 }
 
 .capture {
-  border: 10px solid rgba(0, 0, 0, 0.25);
+  border: 7px solid rgba(0, 0, 0, 0.15);
   height: 100px;
   width: 100px;
   border-radius: 50%;
   box-sizing: border-box;
+  pointer-events: none;
 }
 
  .black.moved {
@@ -227,3 +229,40 @@ body {
   background-position: center;
 }
 
+.upperPlayerBar {
+  display: flex;
+  margin-bottom: 10px;
+}
+
+.lowerPlayerBar {
+  display: flex;
+  margin-top: 10px;
+}
+
+.player-info {
+  color: rgb(192, 189, 189);
+  margin-left: 10px;
+}
+
+.UpperCapturedPieces {
+  background-color: #808080;
+  height: 20px;
+  width: 140px;
+}
+
+.player-icon {
+  height: 40px;
+  width: 40px;
+}
+
+line {
+  stroke: green;
+  stroke-width: 15px;
+  stroke-linecap: round;
+  pointer-events: none;
+}
+
+svg {
+  position: absolute;
+  pointer-events: none;
+}

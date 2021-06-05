@@ -11,15 +11,18 @@ let xAxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
 let yAxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 
 var elementClicked = null;
+let justMovedPieces = [];
 
 const Chessboard = () => {
     const chessboardRef = useRef(null);
 
     const [positionL, setPieces] = useState(startPosition);
     const [hints, setHints] = useState([]);
-    const [captures, setConst] = useState([]);
+    const [captures, setCaptures] = useState([]);
     const [activePiece, setActivePiece] = useState(null);
     const [lastClicked, setLastClicked] = useState();
+    const [arrows, setArrows] = useState([]);
+    const [rightClicked, setRightClicked] = useState(null);
 
     function loadFen(fen) {
 
@@ -121,6 +124,45 @@ const Chessboard = () => {
         }
     }
 
+    function addArrow(from, to) {
+        let x1 = xAxis.indexOf(from.charAt(0)) * 100 + 50;
+        let y1 = yAxis.indexOf(from.charAt(1)) * 100 + 50;
+
+        let x2 = xAxis.indexOf(to.charAt(0)) * 100 + 50;
+        let y2 = yAxis.indexOf(to.charAt(1)) * 100 + 50;
+        
+        if (y1 > y2) {
+            y2 += 10;
+        } else if (y1 < y2) {
+            y2 -= 10;
+        }
+
+        if (x1 > x2) {
+            x2 += 10;
+        } else if (x1 < x2) {
+            x2 -= 10;
+        }
+
+        if (x1 === x2 && y1 === y2) {
+            return;
+        }
+        
+        const newElement = (
+        <svg position="absolute" height="800" width="800">
+            <defs>
+                <marker id="head" orient="auto" markerHeight="8" markerWidth="4" refX="2" refY="2">
+                    <path d="M0,0 V4 L3,2 Z" fill="green" />
+                </marker>
+            </defs>
+            <line x1={x1} y1={y1} x2={x2} y2={y2} markerEnd="url(#head)" opacity="0.6">
+
+            </line>
+        </svg>);
+        setArrows(oldArray => [...oldArray, newElement]);
+        
+        
+    }
+
     function move(from, to) {
         var move = game.move({
             from: from,
@@ -130,8 +172,16 @@ const Chessboard = () => {
 
         if (move !== null) {
             loadFen(game.fen())
-            hints.length = 0;
-            captures.length = 0;
+            setHints([]);
+            setCaptures([]);
+            if (justMovedPieces.length > 1) {
+                justMovedPieces[0].justmoved = false;
+                justMovedPieces[1].justmoved = false;
+            }
+            justMovedPieces[0] = positionL.find(p => p.position === from);
+            justMovedPieces[1] = positionL.find(p => p.position === to);
+            justMovedPieces[0].justmoved = true;
+            justMovedPieces[1].justmoved = true;
         } else {
             if (activePiece !== null) {
                 activePiece.style.position = "static";
@@ -139,11 +189,15 @@ const Chessboard = () => {
                 activePiece.style.removeProperty('left');
             }
         }
+        console.log(from)
+        console.log(to)
+
         setActivePiece(null);
     }
 
     function grabPiece(e) {
         if (e.button < 2) {
+            setArrows([])
             const element = e.target;
 
             if (lastClicked !== null && elementClicked !== null) {
@@ -161,7 +215,12 @@ const Chessboard = () => {
                 element.style.left = `${x}px`;
                 element.style.top = `${y}px`;
 
-                if (elementClicked !== null) {
+                console.log(elementClicked !== null)
+                console.log(!justMovedPieces.includes(elementClicked))
+                console.log(justMovedPieces)
+                console.log(elementClicked)
+
+                if (elementClicked !== null && !justMovedPieces.includes(elementClicked)) {
                     elementClicked.justmoved = false;
                 }
 
@@ -173,21 +232,27 @@ const Chessboard = () => {
                 captures.length = 0;
                 var notation = []
                 var chars = { "B": "", "N": "", "+": "", "#": "", "Q": "", "K": "", "R": "" }
-
-
+                var capturesNotation = [];
+                console.log(possibleMoves)
                 for (let i = 0; i < possibleMoves.length; i++) {
-                    notation[i] = possibleMoves[i].replace(/[RQKBN+#]/g, m => chars[m]);
+                    let n = possibleMoves[i].replace(/[RQKBN+#]/g, m => chars[m]);
+                    if (possibleMoves[i].includes("x")) {
+                        capturesNotation.push(n.slice(-2))
+                    } else {
+                        notation.push(n.slice(-2));
+                    }
+
                 }
-                console.log(notation)
+
+                console.log(capturesNotation)
                 const currentTurn = game.turn();
                 positionL.forEach(p => {
-                    notation.forEach(n => {
-                        if (n.includes("x") && n.includes(p.position)) {
-                            captures.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 })
-                        }
-                    })
+                    if (capturesNotation.includes(p.position)) {
+                        setCaptures(c => [...c, { position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 }]);
+
+                    }
                     if (notation.includes(p.position)) {
-                        hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
+                        setHints(h => [...h, { position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 }]);
                     }
 
                     // if castling extra hint circle is given
@@ -195,7 +260,8 @@ const Chessboard = () => {
                         if ((currentTurn === "w" && p.position === "g1") || (currentTurn === "b" && p.position === "g8")) {
                             hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
                         }
-                    } else if (possibleMoves.includes("O-O-O")) {
+                    }
+                    if (possibleMoves.includes("O-O-O")) {
                         if ((currentTurn === "w" && p.position === "c1") || (currentTurn === "b" && p.position === "c8")) {
                             hints.push({ position: p.position, top: chessboardRef.current.offsetTop + yAxis.indexOf(p.position.charAt(1)) * 100 + 35, left: chessboardRef.current.offsetLeft + xAxis.indexOf(p.position.charAt(0)) * 100 + 35 });
                         }
@@ -203,6 +269,10 @@ const Chessboard = () => {
                 });
                 setActivePiece(element);
             }
+        } else if (e.button === 2) {
+
+            setRightClicked(xAxis[Math.floor((e.clientX - chessboardRef.current.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboardRef.current.offsetTop) / 100)]);
+            console.log(xAxis[Math.floor((e.clientX - chessboardRef.current.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboardRef.current.offsetTop) / 100)]);
         }
 
     }
@@ -246,6 +316,10 @@ const Chessboard = () => {
             move(activePiece.id, mousePosition)
         }
 
+        if (e.button === 2 && rightClicked !== null) {
+            console.log(xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)])
+            addArrow(rightClicked, xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)])
+        }
     }
 
     let board = [];
@@ -276,12 +350,18 @@ const Chessboard = () => {
     }
     let keyCounter = 1337;
 
+    arrows.forEach(h => {
+        console.log(h)
+        board.push(h);
+    })
+
     hints.forEach(h => {
-        board.push(<MoveHint capture={false} key={"hint"  + " " + keyCounter} position={h.position} left={h.left} top={h.top}></MoveHint>)
-        counter++;
+        board.push(<MoveHint capture={false} key={"hint" + " " + keyCounter} position={h.position} left={h.left} top={h.top}></MoveHint>)
+        keyCounter++;
     })
     captures.forEach(h => {
         board.push(<MoveHint capture={true} key={"capture " + " " + keyCounter} position={h.position} left={h.left} top={h.top}></MoveHint>)
+        keyCounter++;
     })
     return (
         <div
