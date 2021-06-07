@@ -4,7 +4,8 @@ import { useState, useRef } from 'react';
 import Chess from 'chess.js'
 import MoveHint from './MoveHint';
 
-var game = new Chess();
+// var game = new Chess();
+// var backwardsGame = new Chess();
 
 const verticalAxis = ["1", "2", "3", "4", "5", "6", "7", "8"];
 let xAxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -13,7 +14,9 @@ let yAxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 var elementClicked = null;
 let justMovedPieces = [];
 
-const Chessboard = () => {
+const Chessboard = ({updateFen, moveBack}) => {
+    const [game, setGame] = useState(new Chess());
+    const [backwardsGame, setBackwardsGame] = useState(new Chess())
     const chessboardRef = useRef(null);
 
     const [positionL, setPieces] = useState(startPosition);
@@ -23,6 +26,15 @@ const Chessboard = () => {
     const [lastClicked, setLastClicked] = useState();
     const [arrows, setArrows] = useState([]);
     const [rightClicked, setRightClicked] = useState(null);
+    const [markedTiles, setMarkerTiles] = useState([]);
+
+    function moveBack(move) {
+        backwardsGame = game;
+        while (backwardsGame.history()[backwardsGame.history().length - 1] !== move) {
+            backwardsGame.undo();
+        }
+        loadFen(backwardsGame.fen())
+    }
 
     function loadFen(fen) {
 
@@ -130,7 +142,7 @@ const Chessboard = () => {
 
         let x2 = xAxis.indexOf(to.charAt(0)) * 100 + 50;
         let y2 = yAxis.indexOf(to.charAt(1)) * 100 + 50;
-        
+
         if (y1 > y2) {
             y2 += 10;
         } else if (y1 < y2) {
@@ -146,21 +158,35 @@ const Chessboard = () => {
         if (x1 === x2 && y1 === y2) {
             return;
         }
-        
-        const newElement = (
-        <svg position="absolute" height="800" width="800">
-            <defs>
-                <marker id="head" orient="auto" markerHeight="8" markerWidth="4" refX="2" refY="2">
-                    <path d="M0,0 V4 L3,2 Z" fill="green" />
-                </marker>
-            </defs>
-            <line x1={x1} y1={y1} x2={x2} y2={y2} markerEnd="url(#head)" opacity="0.6">
+        const id = x1 + "," + x2 + "," + y1 + "," + y2;
+        let arrowAlreadyIn = false;
+        arrows.forEach(p => {
+            if (p.props.id === id) {
+                const index =  arrows.indexOf(p);
+                // removes the item with index = i
+                setArrows(arrows.filter((_, i) => i !== index))
 
-            </line>
-        </svg>);
-        setArrows(oldArray => [...oldArray, newElement]);
+                arrowAlreadyIn = true
+            }
+        })
         
+
+        const newElement = (
+            <svg position="absolute" height="800" width="800" id={id}>
+                <defs>
+                    <marker id="head" orient="auto" markerHeight="8" markerWidth="4" refX="2" refY="2">
+                        <path d="M0,0 V4 L3,2 Z" fill="green" />
+                    </marker>
+                </defs>
+                <line x1={x1} y1={y1} x2={x2} y2={y2} markerEnd="url(#head)" opacity="0.6"></line>
+            </svg>);
+
+        if (!arrowAlreadyIn) {
+            setArrows(oldArray => [...oldArray, newElement]);
+        }
         
+
+
     }
 
     function move(from, to) {
@@ -172,6 +198,8 @@ const Chessboard = () => {
 
         if (move !== null) {
             loadFen(game.fen())
+            updateFen(game.history());
+            
             setHints([]);
             setCaptures([]);
             if (justMovedPieces.length > 1) {
@@ -189,8 +217,6 @@ const Chessboard = () => {
                 activePiece.style.removeProperty('left');
             }
         }
-        console.log(from)
-        console.log(to)
 
         setActivePiece(null);
     }
@@ -198,6 +224,9 @@ const Chessboard = () => {
     function grabPiece(e) {
         if (e.button < 2) {
             setArrows([])
+            positionL.forEach(p => {
+                p.marked = false;
+            })
             const element = e.target;
 
             if (lastClicked !== null && elementClicked !== null) {
@@ -270,9 +299,15 @@ const Chessboard = () => {
                 setActivePiece(element);
             }
         } else if (e.button === 2) {
-
+            console.log("right click")
             setRightClicked(xAxis[Math.floor((e.clientX - chessboardRef.current.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboardRef.current.offsetTop) / 100)]);
-            console.log(xAxis[Math.floor((e.clientX - chessboardRef.current.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboardRef.current.offsetTop) / 100)]);
+            
+            // for (var i = 0; i < positionL.length; i++) {
+            //     if (positionL[i].position === toSquare) 
+            //         positionL[i].marked = true;
+            // }
+
+
         }
 
     }
@@ -317,14 +352,52 @@ const Chessboard = () => {
         }
 
         if (e.button === 2 && rightClicked !== null) {
-            console.log(xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)])
-            addArrow(rightClicked, xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)])
+            const toSquare = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
+
+            addArrow(rightClicked, toSquare);
+
+            const positionOfSquare = (xAxis.indexOf(toSquare.charAt(0))) + (yAxis.indexOf(toSquare.charAt(1))) * 8;
+            if (rightClicked === toSquare) {
+                console.log("heyho")
+                if (positionL[positionOfSquare].marked) {
+                    setPieces(items => [...items.slice(0, positionOfSquare), { ...items[positionOfSquare], marked: false }, ...items.slice(positionOfSquare + 1)]);
+                } else {
+                    setPieces(items => [...items.slice(0, positionOfSquare), { ...items[positionOfSquare], marked: true }, ...items.slice(positionOfSquare + 1)]);
+                }
+
+                
+            }
+
+
         }
     }
 
     let board = [];
     let colors = ["black", "white"];
-
+    // backwardsGame.loadFen
+    // console.log(backwardsGame.history()[backwardsGame.history().length - 1])
+    // backwardsGame.undo();
+    // console.log(backwardsGame.history()[backwardsGame.history().length - 1])
+    let found = false;
+    game.history().forEach( h => {
+        console.log(h)
+        console.log({moveBack})
+        if (h === moveBack) {
+            found = true;
+        }
+        if(!found)
+            backwardsGame.move(h);
+    })
+    console.log(backwardsGame.history())
+    console.log(game.history())
+    // loadFen(backwardsGame.fen())
+    // if (backwardsGame !== undefined && move !== undefined && backwardsGame.history().length > 0) {
+    //     while (backwardsGame.history()[backwardsGame.history().length - 1] !== move) {
+    //         backwardsGame.undo();
+    //     }
+    //     loadFen(backwardsGame.fen())
+    // }
+        
 
     let counter = 0;
     for (let j = 7; j >= 0; j--) {
@@ -343,12 +416,15 @@ const Chessboard = () => {
                     image={img}
                     moved={positionL[counter].justmoved}
                     check={positionL[counter].check}
+                    marked={positionL[counter].marked}
                 />
             )
             counter++;
         }
     }
     let keyCounter = 1337;
+
+
 
     arrows.forEach(h => {
         console.log(h)
@@ -378,74 +454,74 @@ const Chessboard = () => {
 }
 
 let startPosition = [
-    { piece: "rook", position: "a8", color: "black", image: "./assets/black_rook.svg", justmoved: false, check: false },
-    { piece: "knight", position: "b8", color: "black", image: "./assets/black_knight.svg", justmoved: false, check: false },
-    { piece: "bishop", position: "c8", color: "black", image: "./assets/black_bishop.svg", justmoved: false, check: false },
-    { piece: "queen", position: "d8", color: "black", image: "./assets/black_queen.svg", justmoved: false, check: false },
-    { piece: "king", position: "e8", color: "black", image: "./assets/black_king.svg", justmoved: false, check: false },
-    { piece: "bishop", position: "f8", color: "black", image: "./assets/black_bishop.svg", justmoved: false, check: false },
-    { piece: "knight", position: "g8", color: "black", image: "./assets/black_knight.svg", justmoved: false, check: false },
-    { piece: "rook", position: "h8", color: "black", image: "./assets/black_rook.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "a7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "b7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "c7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "d7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "e7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "f7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "g7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "h7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false },
-    { piece: undefined, position: "a6", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "b6", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "c6", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "d6", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "e6", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "f6", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "g6", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "h6", color: undefined, image: undefined, justmoved: false, check: false },
+    { piece: "rook", position: "a8", color: "black", image: "./assets/black_rook.svg", justmoved: false, check: false, marked: false },
+    { piece: "knight", position: "b8", color: "black", image: "./assets/black_knight.svg", justmoved: false, check: false, marked: false },
+    { piece: "bishop", position: "c8", color: "black", image: "./assets/black_bishop.svg", justmoved: false, check: false, marked: false },
+    { piece: "queen", position: "d8", color: "black", image: "./assets/black_queen.svg", justmoved: false, check: false, marked: false },
+    { piece: "king", position: "e8", color: "black", image: "./assets/black_king.svg", justmoved: false, check: false, marked: false },
+    { piece: "bishop", position: "f8", color: "black", image: "./assets/black_bishop.svg", justmoved: false, check: false, marked: false },
+    { piece: "knight", position: "g8", color: "black", image: "./assets/black_knight.svg", justmoved: false, check: false, marked: false },
+    { piece: "rook", position: "h8", color: "black", image: "./assets/black_rook.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "a7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "b7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "c7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "d7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "e7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "f7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "g7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "h7", color: "black", image: "./assets/black_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "a6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "b6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "c6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "d6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "e6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "f6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "g6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "h6", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
 
-    { piece: undefined, position: "a5", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "b5", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "c5", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "d5", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "e5", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "f5", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "g5", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "h5", color: undefined, image: undefined, justmoved: false, check: false },
+    { piece: undefined, position: "a5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "b5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "c5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "d5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "e5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "f5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "g5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "h5", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
 
-    { piece: undefined, position: "a4", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "b4", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "c4", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "d4", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "e4", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "f4", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "g4", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "h4", color: undefined, image: undefined, justmoved: false, check: false },
+    { piece: undefined, position: "a4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "b4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "c4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "d4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "e4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "f4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "g4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "h4", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
 
-    { piece: undefined, position: "a3", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "b3", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "c3", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "d3", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "e3", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "f3", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "g3", color: undefined, image: undefined, justmoved: false, check: false },
-    { piece: undefined, position: "h3", color: undefined, image: undefined, justmoved: false, check: false },
+    { piece: undefined, position: "a3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "b3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "c3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "d3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "e3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "f3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "g3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
+    { piece: undefined, position: "h3", color: undefined, image: undefined, justmoved: false, check: false, marked: false },
 
     { piece: "pawn", position: "a2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "b2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "c2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "d2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "e2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "f2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "g2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "pawn", position: "h2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false },
-    { piece: "rook", position: "a1", color: "white", image: "./assets/white_rook.svg", justmoved: false, check: false },
-    { piece: "knight", position: "b1", color: "white", image: "./assets/white_knight.svg", justmoved: false, check: false },
-    { piece: "bishop", position: "c1", color: "white", image: "./assets/white_bishop.svg", justmoved: false, check: false },
-    { piece: "queen", position: "d1", color: "white", image: "./assets/white_queen.svg", justmoved: false, check: false },
-    { piece: "king", position: "e1", color: "white", image: "./assets/white_king.svg", justmoved: false, check: false },
-    { piece: "bishop", position: "f1", color: "white", image: "./assets/white_bishop.svg", justmoved: false, check: false },
-    { piece: "knight", position: "g1", color: "white", image: "./assets/white_knight.svg", justmoved: false, check: false },
-    { piece: "rook", position: "h1", color: "white", image: "./assets/white_rook.svg", justmoved: false, check: false },
+    { piece: "pawn", position: "b2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "c2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "d2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "e2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "f2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "g2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "pawn", position: "h2", color: "white", image: "./assets/white_pawn.svg", justmoved: false, check: false, marked: false },
+    { piece: "rook", position: "a1", color: "white", image: "./assets/white_rook.svg", justmoved: false, check: false, marked: false },
+    { piece: "knight", position: "b1", color: "white", image: "./assets/white_knight.svg", justmoved: false, check: false, marked: false },
+    { piece: "bishop", position: "c1", color: "white", image: "./assets/white_bishop.svg", justmoved: false, check: false, marked: false },
+    { piece: "queen", position: "d1", color: "white", image: "./assets/white_queen.svg", justmoved: false, check: false, marked: false },
+    { piece: "king", position: "e1", color: "white", image: "./assets/white_king.svg", justmoved: false, check: false, marked: false },
+    { piece: "bishop", position: "f1", color: "white", image: "./assets/white_bishop.svg", justmoved: false, check: false, marked: false },
+    { piece: "knight", position: "g1", color: "white", image: "./assets/white_knight.svg", justmoved: false, check: false, marked: false },
+    { piece: "rook", position: "h1", color: "white", image: "./assets/white_rook.svg", justmoved: false, check: false, marked: false },
 ]
 
 export default Chessboard

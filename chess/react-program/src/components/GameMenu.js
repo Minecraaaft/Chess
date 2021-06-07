@@ -1,7 +1,8 @@
 import React from 'react'
+import MoveList from './MoveList';
 import NewGameMenu from './NewGameMenu';
 
-const GameMenu = () => {
+const GameMenu = ({fen, moveBack, currentMove}) => {
     const openTab = (city) => {
         var i;
         var x = document.getElementsByClassName("tab");
@@ -14,7 +15,14 @@ const GameMenu = () => {
         console.log(city)
     }
 
-
+    function oneMoveBack() {
+        for (let index = fen.length; index > 0 ; index--) {
+            if (fen[index] === currentMove) {
+                moveBack(fen[index - 1])
+            }
+            
+        }
+    }
 
     return (
         <div className="GameMenuBox">
@@ -29,13 +37,13 @@ const GameMenu = () => {
             </div>
 
             <div id="gameTab" className="tab" style={{ display: 'none' }}>
-                <h2>Paris</h2>
-                <p>Paris is the capital of France.</p>
+                <MoveList moveList={fen} />
+                <button onclick={() => oneMoveBack()}>back</button>
             </div>
 
             <div id="helloTab" className="tab" style={{ display: 'none' }}>
-                <h2>Tokyo</h2>
-                <p>Tokyo is the capital of Japan.</p>
+                <MoveList moveList={fen} />
+                
             </div>
         </div>
     )

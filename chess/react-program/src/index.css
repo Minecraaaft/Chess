@@ -200,6 +200,14 @@ body {
   pointer-events: none;
 }
 
+.tile.black.marked {
+  background-color: #b44a37;
+}
+
+.tile.white.marked {
+  background-color: #eb947a;
+}
+
  .black.moved {
   background-color:rgb(171, 162, 58);
 }

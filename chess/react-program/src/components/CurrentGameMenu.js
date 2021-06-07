@@ -1,6 +1,6 @@
 import React from 'react'
 
-const CurrentGameMenu = () => {
+export const CurrentGameMenu = (props) => {
     return (
         <div>
             
