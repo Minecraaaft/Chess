@@ -1,6 +1,6 @@
 import React from 'react'
 
-const Tile = ({ color, position, image, moved, check }) => {
+const Tile = ({ color, position, image, moved, check, marked }) => {
     let clasName = color + " tile " + position;
     if (moved) {
         clasName += " moved"
@@ -8,6 +8,10 @@ const Tile = ({ color, position, image, moved, check }) => {
 
     if (check) {
         clasName += " check"
+    }
+
+    if (marked) {
+        clasName += " marked"
     }
 
     if (image !== undefined) {
