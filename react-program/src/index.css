@@ -20,6 +20,7 @@ html, body, #root, .app {
   display: flex;
     align-items: center;
     justify-content: center;
+    color: white;
 }
 
 body {
@@ -82,6 +83,10 @@ body {
 .tab-container {
   display: flex;
   flex: 0 0
+}
+
+#gameTab {
+  height: 700px;
 }
 
 .tabButton {
@@ -240,11 +245,29 @@ body {
 .upperPlayerBar {
   display: flex;
   margin-bottom: 10px;
+  
+  justify-content: space-between;
 }
 
 .lowerPlayerBar {
   display: flex;
   margin-top: 10px;
+  
+  justify-content: space-between;
+}
+
+.time-box {
+  background-color: grey;
+  border-radius: 10px;
+  height: 40px;
+  width: 100px;
+  text-align: center;
+  vertical-align: center;
+  line-height: 40px;
+}
+
+.player{
+  display: flex;
 }
 
 .player-info {
@@ -273,4 +296,22 @@ line {
 svg {
   position: absolute;
   pointer-events: none;
+}
+
+.notation-move {
+  
+
+}
+.move-notataion-menu:nth-child(2n) {
+  
+}
+
+.notation-move-line {
+  width: 100%;
+  background-color: rgb(40, 40, 40);
+  display: flex;
+  justify-content: space-between;
+}
+.notation-move-line:nth-child(2n) {
+  background-color: rgb(60, 60, 60);
 }

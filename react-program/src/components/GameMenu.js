@@ -2,7 +2,7 @@ import React from 'react'
 import MoveList from './MoveList';
 import NewGameMenu from './NewGameMenu';
 
-const GameMenu = ({fen, moveBack, currentMove}) => {
+const GameMenu = ({ fen, moveBack, currentMove }) => {
     const openTab = (city) => {
         var i;
         var x = document.getElementsByClassName("tab");
@@ -12,17 +12,10 @@ const GameMenu = ({fen, moveBack, currentMove}) => {
         if (document.getElementById(city) !== undefined)
             document.getElementById(city).style.display = "block";
 
-        console.log(city)
+
     }
 
-    function oneMoveBack() {
-        for (let index = fen.length; index > 0 ; index--) {
-            if (fen[index] === currentMove) {
-                moveBack(fen[index - 1])
-            }
-            
-        }
-    }
+    let counter = 0;
 
     return (
         <div className="GameMenuBox">
@@ -37,13 +30,35 @@ const GameMenu = ({fen, moveBack, currentMove}) => {
             </div>
 
             <div id="gameTab" className="tab" style={{ display: 'none' }}>
-                <MoveList moveList={fen} />
-                <button onclick={() => oneMoveBack()}>back</button>
+                <MoveList key={counter++} moveList={fen} />
+                <button onClick={() => {
+                    for (let index = fen.length; index >= 0; index--) {
+                        if (fen[index] === currentMove && currentMove !== undefined) { // currenMove being undefined means no move has been made
+                            moveBack(fen[index - 1])
+                        }
+
+                    }
+
+                }}
+                >back</button>
+                <button
+                onClick={() => {
+                    for (let index = fen.length; index >= 0; index--) {
+                        console.log(currentMove)
+                        if (fen[index] === currentMove && index < fen.length - 1) { 
+                            moveBack(fen[index + 1])
+                        }
+                    }
+                    if (currentMove === undefined) {
+                        moveBack(fen[0])
+                    }
+                }}
+                >Forward</button>
             </div>
 
             <div id="helloTab" className="tab" style={{ display: 'none' }}>
-                <MoveList moveList={fen} />
-                
+
+
             </div>
         </div>
     )

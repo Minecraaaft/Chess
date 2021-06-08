@@ -4,8 +4,8 @@ import { useState, useRef } from 'react';
 import Chess from 'chess.js'
 import MoveHint from './MoveHint';
 
-// var game = new Chess();
-// var backwardsGame = new Chess();
+var game = new Chess();
+var backwardsGame = new Chess();
 
 const verticalAxis = ["1", "2", "3", "4", "5", "6", "7", "8"];
 let xAxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
@@ -14,10 +14,11 @@ let yAxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 var elementClicked = null;
 let justMovedPieces = [];
 
-const Chessboard = ({updateFen, moveBack}) => {
-    const [game, setGame] = useState(new Chess());
-    const [backwardsGame, setBackwardsGame] = useState(new Chess())
+const Chessboard = ({ updateFen, moveBack, resetMove }) => {
+    // const [game, setGame] = useState(new Chess());
+    // const [backwardsGame, setBackwardsGame] = useState(new Chess())
     const chessboardRef = useRef(null);
+    const [moveback, setMoveBack] = useState({ moveBack })
 
     const [positionL, setPieces] = useState(startPosition);
     const [hints, setHints] = useState([]);
@@ -28,13 +29,7 @@ const Chessboard = ({updateFen, moveBack}) => {
     const [rightClicked, setRightClicked] = useState(null);
     const [markedTiles, setMarkerTiles] = useState([]);
 
-    function moveBack(move) {
-        backwardsGame = game;
-        while (backwardsGame.history()[backwardsGame.history().length - 1] !== move) {
-            backwardsGame.undo();
-        }
-        loadFen(backwardsGame.fen())
-    }
+
 
     function loadFen(fen) {
 
@@ -115,10 +110,9 @@ const Chessboard = ({updateFen, moveBack}) => {
 
         }
 
-
         const currentTurn = game.turn();
 
-        if (game.in_check()) {
+        if (backwardsGame.in_check()) {
             const king = positionL.find(p => p.color !== undefined && p.color.charAt(0) === currentTurn && p.piece === "king")
             king.check = true;
         } else {
@@ -134,6 +128,24 @@ const Chessboard = ({updateFen, moveBack}) => {
                 }
             })
         }
+
+        if (justMovedPieces.length > 1) {
+            console.log(justMovedPieces)
+            justMovedPieces[0].justmoved = false;
+            justMovedPieces[1].justmoved = false;
+
+        }
+        if (backwardsGame.history().length > 0) {
+            const historyLength = backwardsGame.history().length;
+           const from = backwardsGame.history({verbose: true})[historyLength-1].from;
+            const to = backwardsGame.history({verbose: true})[historyLength-1].to;
+    
+            justMovedPieces[0] = positionL.find(p => p.position === from);
+            justMovedPieces[1] = positionL.find(p => p.position === to);
+            justMovedPieces[0].justmoved = true;
+            justMovedPieces[1].justmoved = true; 
+        }
+        
     }
 
     function addArrow(from, to) {
@@ -162,14 +174,14 @@ const Chessboard = ({updateFen, moveBack}) => {
         let arrowAlreadyIn = false;
         arrows.forEach(p => {
             if (p.props.id === id) {
-                const index =  arrows.indexOf(p);
+                const index = arrows.indexOf(p);
                 // removes the item with index = i
                 setArrows(arrows.filter((_, i) => i !== index))
 
                 arrowAlreadyIn = true
             }
         })
-        
+
 
         const newElement = (
             <svg position="absolute" height="800" width="800" id={id}>
@@ -184,8 +196,6 @@ const Chessboard = ({updateFen, moveBack}) => {
         if (!arrowAlreadyIn) {
             setArrows(oldArray => [...oldArray, newElement]);
         }
-        
-
 
     }
 
@@ -197,19 +207,14 @@ const Chessboard = ({updateFen, moveBack}) => {
         })
 
         if (move !== null) {
+            
             loadFen(game.fen())
             updateFen(game.history());
-            
+            resetMove(game.history()[game.history().length -1])
             setHints([]);
             setCaptures([]);
-            if (justMovedPieces.length > 1) {
-                justMovedPieces[0].justmoved = false;
-                justMovedPieces[1].justmoved = false;
-            }
-            justMovedPieces[0] = positionL.find(p => p.position === from);
-            justMovedPieces[1] = positionL.find(p => p.position === to);
-            justMovedPieces[0].justmoved = true;
-            justMovedPieces[1].justmoved = true;
+            
+            
         } else {
             if (activePiece !== null) {
                 activePiece.style.position = "static";
@@ -217,10 +222,10 @@ const Chessboard = ({updateFen, moveBack}) => {
                 activePiece.style.removeProperty('left');
             }
         }
-
+        
         setActivePiece(null);
     }
-
+    
     function grabPiece(e) {
         if (e.button < 2) {
             setArrows([])
@@ -232,7 +237,7 @@ const Chessboard = ({updateFen, moveBack}) => {
             if (lastClicked !== null && elementClicked !== null) {
                 const chessboard = chessboardRef.current;
                 let mousePosition = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
-                console.log(lastClicked)
+
                 move(lastClicked.id, mousePosition)
                 setLastClicked(null)
             }
@@ -244,10 +249,7 @@ const Chessboard = ({updateFen, moveBack}) => {
                 element.style.left = `${x}px`;
                 element.style.top = `${y}px`;
 
-                console.log(elementClicked !== null)
-                console.log(!justMovedPieces.includes(elementClicked))
-                console.log(justMovedPieces)
-                console.log(elementClicked)
+
 
                 if (elementClicked !== null && !justMovedPieces.includes(elementClicked)) {
                     elementClicked.justmoved = false;
@@ -262,7 +264,7 @@ const Chessboard = ({updateFen, moveBack}) => {
                 var notation = []
                 var chars = { "B": "", "N": "", "+": "", "#": "", "Q": "", "K": "", "R": "" }
                 var capturesNotation = [];
-                console.log(possibleMoves)
+
                 for (let i = 0; i < possibleMoves.length; i++) {
                     let n = possibleMoves[i].replace(/[RQKBN+#]/g, m => chars[m]);
                     if (possibleMoves[i].includes("x")) {
@@ -273,7 +275,7 @@ const Chessboard = ({updateFen, moveBack}) => {
 
                 }
 
-                console.log(capturesNotation)
+
                 const currentTurn = game.turn();
                 positionL.forEach(p => {
                     if (capturesNotation.includes(p.position)) {
@@ -299,14 +301,7 @@ const Chessboard = ({updateFen, moveBack}) => {
                 setActivePiece(element);
             }
         } else if (e.button === 2) {
-            console.log("right click")
             setRightClicked(xAxis[Math.floor((e.clientX - chessboardRef.current.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboardRef.current.offsetTop) / 100)]);
-            
-            // for (var i = 0; i < positionL.length; i++) {
-            //     if (positionL[i].position === toSquare) 
-            //         positionL[i].marked = true;
-            // }
-
 
         }
 
@@ -358,14 +353,14 @@ const Chessboard = ({updateFen, moveBack}) => {
 
             const positionOfSquare = (xAxis.indexOf(toSquare.charAt(0))) + (yAxis.indexOf(toSquare.charAt(1))) * 8;
             if (rightClicked === toSquare) {
-                console.log("heyho")
+
                 if (positionL[positionOfSquare].marked) {
                     setPieces(items => [...items.slice(0, positionOfSquare), { ...items[positionOfSquare], marked: false }, ...items.slice(positionOfSquare + 1)]);
                 } else {
                     setPieces(items => [...items.slice(0, positionOfSquare), { ...items[positionOfSquare], marked: true }, ...items.slice(positionOfSquare + 1)]);
                 }
 
-                
+
             }
 
 
@@ -374,30 +369,6 @@ const Chessboard = ({updateFen, moveBack}) => {
 
     let board = [];
     let colors = ["black", "white"];
-    // backwardsGame.loadFen
-    // console.log(backwardsGame.history()[backwardsGame.history().length - 1])
-    // backwardsGame.undo();
-    // console.log(backwardsGame.history()[backwardsGame.history().length - 1])
-    let found = false;
-    game.history().forEach( h => {
-        console.log(h)
-        console.log({moveBack})
-        if (h === moveBack) {
-            found = true;
-        }
-        if(!found)
-            backwardsGame.move(h);
-    })
-    console.log(backwardsGame.history())
-    console.log(game.history())
-    // loadFen(backwardsGame.fen())
-    // if (backwardsGame !== undefined && move !== undefined && backwardsGame.history().length > 0) {
-    //     while (backwardsGame.history()[backwardsGame.history().length - 1] !== move) {
-    //         backwardsGame.undo();
-    //     }
-    //     loadFen(backwardsGame.fen())
-    // }
-        
 
     let counter = 0;
     for (let j = 7; j >= 0; j--) {
@@ -424,10 +395,8 @@ const Chessboard = ({updateFen, moveBack}) => {
     }
     let keyCounter = 1337;
 
-
-
     arrows.forEach(h => {
-        console.log(h)
+
         board.push(h);
     })
 
@@ -439,6 +408,9 @@ const Chessboard = ({updateFen, moveBack}) => {
         board.push(<MoveHint capture={true} key={"capture " + " " + keyCounter} position={h.position} left={h.left} top={h.top}></MoveHint>)
         keyCounter++;
     })
+
+    let found = false;
+    
     return (
         <div
             onMouseUp={(e) => dropPiece(e)}
@@ -448,7 +420,28 @@ const Chessboard = ({updateFen, moveBack}) => {
             id="chessboard"
             ref={chessboardRef}
         >
+            {}
+            {(() => {
+                console.log(moveBack)
+                backwardsGame = new Chess()
+                game.history().forEach(h => {
+                    
+                    if (!found)
+                        backwardsGame.move(h);
+                    
+                    if (h === moveBack) {
+                        found = true;
+                    } else if (moveBack === undefined) {
+                        
+                        backwardsGame.undo()
+                    }
+                    
+                })
+                loadFen(backwardsGame.fen())
+                found = false;
+            })()}
             {board}
+
         </div>
     );
 }
