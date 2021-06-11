@@ -2,7 +2,7 @@ import React from 'react'
 import MoveList from './MoveList';
 import NewGameMenu from './NewGameMenu';
 
-const GameMenu = ({ fen, moveBack, currentMove }) => {
+const GameMenu = ({ moveList, setMoveNumber, currentMove }) => {
     const openTab = (city) => {
         var i;
         var x = document.getElementsByClassName("tab");
@@ -30,29 +30,21 @@ const GameMenu = ({ fen, moveBack, currentMove }) => {
             </div>
 
             <div id="gameTab" className="tab" style={{ display: 'none' }}>
-                <MoveList key={counter++} moveList={fen} />
+                <MoveList key={counter++} moveList={moveList} />
                 <button onClick={() => {
-                    for (let index = fen.length; index >= 0; index--) {
-                        if (fen[index] === currentMove && currentMove !== undefined) { // currenMove being undefined means no move has been made
-                            moveBack(fen[index - 1])
-                        }
-
+                    if (currentMove > 0) {
+                        let newMoveNumber = currentMove - 1;
+                        setMoveNumber(newMoveNumber)
                     }
-
                 }}
                 >back</button>
                 <button
-                onClick={() => {
-                    for (let index = fen.length; index >= 0; index--) {
-                        console.log(currentMove)
-                        if (fen[index] === currentMove && index < fen.length - 1) { 
-                            moveBack(fen[index + 1])
+                    onClick={() => {
+                        if (currentMove < moveList.length) {
+                            let newMoveNumber = currentMove + 1;
+                            setMoveNumber(newMoveNumber)
                         }
-                    }
-                    if (currentMove === undefined) {
-                        moveBack(fen[0])
-                    }
-                }}
+                    }}
                 >Forward</button>
             </div>
 

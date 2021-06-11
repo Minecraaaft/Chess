@@ -11,14 +11,13 @@ const verticalAxis = ["1", "2", "3", "4", "5", "6", "7", "8"];
 let xAxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
 let yAxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 
-var elementClicked = null;
-let justMovedPieces = [];
+let tilesJustMoved = [];
 
-const Chessboard = ({ updateFen, moveBack, resetMove }) => {
+const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, setChessStatusFen }) => {
     // const [game, setGame] = useState(new Chess());
     // const [backwardsGame, setBackwardsGame] = useState(new Chess())
     const chessboardRef = useRef(null);
-    const [moveback, setMoveBack] = useState({ moveBack })
+    //const [moveback, setMoveBack] = useState({ moveBack })
 
     const [positionL, setPieces] = useState(startPosition);
     const [hints, setHints] = useState([]);
@@ -129,23 +128,29 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
             })
         }
 
-        if (justMovedPieces.length > 1) {
-            console.log(justMovedPieces)
-            justMovedPieces[0].justmoved = false;
-            justMovedPieces[1].justmoved = false;
-
+        if (tilesJustMoved.length > 1) {
+            positionL.forEach(p => {
+                if (p.position === tilesJustMoved[0] || p.position === tilesJustMoved[1]) {
+                    p.justmoved = false;
+                }
+            })
+            tilesJustMoved[0] = undefined;
+            tilesJustMoved[1] = undefined;
         }
+
         if (backwardsGame.history().length > 0) {
             const historyLength = backwardsGame.history().length;
-           const from = backwardsGame.history({verbose: true})[historyLength-1].from;
-            const to = backwardsGame.history({verbose: true})[historyLength-1].to;
-    
-            justMovedPieces[0] = positionL.find(p => p.position === from);
-            justMovedPieces[1] = positionL.find(p => p.position === to);
-            justMovedPieces[0].justmoved = true;
-            justMovedPieces[1].justmoved = true; 
+            tilesJustMoved[0]= backwardsGame.history({ verbose: true })[historyLength - 1].from;
+            tilesJustMoved[1] = backwardsGame.history({ verbose: true })[historyLength - 1].to;
+
+            
+            positionL.forEach(p => {
+                if (p.position === tilesJustMoved[0] || p.position === tilesJustMoved[1]) {
+                    p.justmoved = true;
+                }
+            })
+
         }
-        
     }
 
     function addArrow(from, to) {
@@ -182,7 +187,6 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
             }
         })
 
-
         const newElement = (
             <svg position="absolute" height="800" width="800" id={id}>
                 <defs>
@@ -196,7 +200,6 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
         if (!arrowAlreadyIn) {
             setArrows(oldArray => [...oldArray, newElement]);
         }
-
     }
 
     function move(from, to) {
@@ -207,14 +210,13 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
         })
 
         if (move !== null) {
-            
-            loadFen(game.fen())
-            updateFen(game.history());
-            resetMove(game.history()[game.history().length -1])
+            loadFen(game.fen());
+            updateMoveList(game.history());
+            setChessStatusFen(game.fen())
+            let newNumberOfMoves = NumberOfMoveViewing === undefined ? 1 : NumberOfMoveViewing + 1;
+            increaseMoveNumber(newNumberOfMoves);
             setHints([]);
             setCaptures([]);
-            
-            
         } else {
             if (activePiece !== null) {
                 activePiece.style.position = "static";
@@ -222,47 +224,63 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
                 activePiece.style.removeProperty('left');
             }
         }
-        
+
         setActivePiece(null);
     }
-    
+
+    function removeMarkedTiles() {
+        positionL.forEach(p => {
+            p.marked = false;
+        })
+    }
+
     function grabPiece(e) {
         if (e.button < 2) {
-            setArrows([])
-            positionL.forEach(p => {
-                p.marked = false;
-            })
+            setArrows([]);
+            removeMarkedTiles();
             const element = e.target;
+            const pieceClicked = positionL.find(p => p.position === element.id);
 
-            if (lastClicked !== null && elementClicked !== null) {
+            console.log(activePiece)
+            console.log(lastClicked)
+            if (lastClicked !== undefined) { // need id only 
                 const chessboard = chessboardRef.current;
-                let mousePosition = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
+                let tileClicked = xAxis[Math.floor((e.clientX - chessboard.offsetLeft) / 100)] + yAxis[Math.floor((e.clientY - chessboard.offsetTop) / 100)];
 
-                move(lastClicked.id, mousePosition)
-                setLastClicked(null)
+                move(lastClicked.id, tileClicked);
+                setLastClicked(undefined);
             }
-            if (element.classList.contains("piece")) {
-                setLastClicked(element)
-                const x = e.clientX - 50;
-                const y = e.clientY - 50;
-                element.style.position = "absolute";
-                element.style.left = `${x}px`;
-                element.style.top = `${y}px`;
+            let justCapturedAPiece = false;
 
+            // if last move was a capture and you're trying to move a piece from same square
+            if (game.history().length > 0 && game.history({ verbose: true })[game.history().length - 1].captured !== undefined
+                && game.history({ verbose: true })[game.history().length - 1].to === element.id) { // need id only
+                justCapturedAPiece = true;
+            }
 
-
-                if (elementClicked !== null && !justMovedPieces.includes(elementClicked)) {
-                    elementClicked.justmoved = false;
+            if (element.classList.contains("piece") && !justCapturedAPiece) {
+                if (lastClicked !== undefined) {
+                    positionL.forEach(p => {
+                        if (p.position === lastClicked.id) {
+                            p.justmoved = false;
+                        }
+                    })
+                }
+                setLastClicked(element);
+                if (!tilesJustMoved.includes(element.id)) {
+                    positionL.forEach(p => {
+                        if (p.position === element.id) {
+                            
+                            p.justmoved = true;
+                        }
+                    })
                 }
 
-                elementClicked = positionL.find(p => p.position === element.id)
-                elementClicked.justmoved = true;
-
-                var possibleMoves = game.moves({ square: elementClicked.position });
+                var possibleMoves = game.moves({ square: pieceClicked.position });
                 hints.length = 0;
                 captures.length = 0;
-                var notation = []
-                var chars = { "B": "", "N": "", "+": "", "#": "", "Q": "", "K": "", "R": "" }
+                var notation = [];
+                var chars = { "B": "", "N": "", "+": "", "#": "", "Q": "", "K": "", "R": "" };
                 var capturesNotation = [];
 
                 for (let i = 0; i < possibleMoves.length; i++) {
@@ -274,7 +292,6 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
                     }
 
                 }
-
 
                 const currentTurn = game.turn();
                 positionL.forEach(p => {
@@ -298,6 +315,7 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
                         }
                     }
                 });
+
                 setActivePiece(element);
             }
         } else if (e.button === 2) {
@@ -359,11 +377,7 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
                 } else {
                     setPieces(items => [...items.slice(0, positionOfSquare), { ...items[positionOfSquare], marked: true }, ...items.slice(positionOfSquare + 1)]);
                 }
-
-
             }
-
-
         }
     }
 
@@ -396,7 +410,6 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
     let keyCounter = 1337;
 
     arrows.forEach(h => {
-
         board.push(h);
     })
 
@@ -409,8 +422,6 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
         keyCounter++;
     })
 
-    let found = false;
-    
     return (
         <div
             onMouseUp={(e) => dropPiece(e)}
@@ -422,23 +433,13 @@ const Chessboard = ({ updateFen, moveBack, resetMove }) => {
         >
             {}
             {(() => {
-                console.log(moveBack)
                 backwardsGame = new Chess()
-                game.history().forEach(h => {
-                    
-                    if (!found)
-                        backwardsGame.move(h);
-                    
-                    if (h === moveBack) {
-                        found = true;
-                    } else if (moveBack === undefined) {
-                        
-                        backwardsGame.undo()
-                    }
-                    
-                })
+                let history = game.history();
+
+                for (let index = 0; index < NumberOfMoveViewing; index++) {
+                    backwardsGame.move(history[index])
+                }
                 loadFen(backwardsGame.fen())
-                found = false;
             })()}
             {board}
 
