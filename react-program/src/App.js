@@ -8,7 +8,7 @@ import { Chess } from 'chess.js';
 import { io } from 'socket.io-client'
 
 import {socket} from '.\\..\\..\\react-program\\src\\socket.js'
-console.log(socket)
+
 function App() {
   const [notation, setNotation] = useState([]);
   const [moveNumber, setMoveNumber] = useState();
@@ -18,20 +18,14 @@ function App() {
   const [xAxis, setXAxis] = useState(["a", "b", "c", "d", "e", "f", "g", "h"]);
   const [yAxis, setYAxis] = useState(["8", "7", "6", "5", "4", "3", "2", "1"]);
   const [playerNumber, setPlayerNumber] = useState()
-
+  const [turn, setTurn] = useState();
   
   useEffect(() => {
-    // const s = io("http://localhost:3001");
-    // setSocket(s)
-
-    
     socket.on("chooseColor", color => {
       SetColor(color);
       
       if (color === "black") {
         console.log("changed")
-        // setYAxis(["1", "2", "3", "4", "5", "6", "7", "8"]);
-        // setXAxis(["h", "g", "f", "e", "d", "c", "b", "a"]);
         
         setStartPos(blackStartPosition)
         
@@ -42,35 +36,21 @@ function App() {
       socket.emit('serverCount', number)
     })
 
-    // s.on("serverMove", fen => {
-    //   setFen(fen);
-    // })
-
     socket.on("setPlayerNumber", (number) => {
       console.log("got number" + number)
       setPlayerNumber(number)
   });
-  
-
-  
-    return () => {
-      
-    }
-  }, [])
-
-  
-
-
+  })
 
   return (
     <div className="app">
       <Sidebar />
       <div className="chess-container">
-        <PlayerBar key={"up"} upper={true} name="Max" elo="1200" fen={fen} playerColor={color === "white" ? "black" : "white"} />
+        <PlayerBar key={"up"} upper={true} name="Max" elo="1200" fen={fen} playerColor={color === "white" ? "black" : "white"} runningTimer={turn !== color && turn !== undefined} />
         <Chessboard updateMoveList={m => setNotation(m)} NumberOfMoveViewing={moveNumber} socket={socket}
-           xaxis={xAxis} yaxis={yAxis} playerNumber={playerNumber} 
+           xaxis={xAxis} yaxis={yAxis} playerNumber={playerNumber} setTurn={turn => setTurn(turn)}
           increaseMoveNumber={moveNumber => setMoveNumber(moveNumber)} setChessStatusFen={f => setFen(f)} color={color} startPos={startPos} />
-        <PlayerBar key={"down"} upper={false} name="Anonymous" elo="1100" fen={fen} playerColor={color} />
+        <PlayerBar key={"down"} upper={false} name="Anonymous" elo="1100" fen={fen} playerColor={color} runningTimer={turn === color} />
       </div>
       <GameMenu moveList={notation} setMoveNumber={moveNumber => setMoveNumber(moveNumber)} currentMove={moveNumber} socket={socket} />
 
@@ -79,9 +59,6 @@ function App() {
   );
 }
 
-
-// let xAxis = ["a", "b", "c", "d", "e", "f", "g", "h"];
-// let yAxis = ["8", "7", "6", "5", "4", "3", "2", "1"];
 
 let startPosition = [
   { piece: "rook", position: "a8", color: "black", image: "./assets/black_rook.svg", justmoved: false, check: false, marked: false },

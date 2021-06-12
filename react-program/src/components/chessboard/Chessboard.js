@@ -12,7 +12,8 @@ var backwardsGame = new Chess();
 
 let tilesJustMoved = [];
 
-const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, setChessStatusFen, color, startPos, moveMethod, xaxis, yaxis, playerNumber, socket }) => {
+const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, setChessStatusFen, 
+    color, startPos, moveMethod, xaxis, yaxis, playerNumber, socket, setTurn }) => {
     // const [game, setGame] = useState(new Chess());
     // const [backwardsGame, setBackwardsGame] = useState(new Chess())
     const chessboardRef = useRef(null);
@@ -50,6 +51,11 @@ const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, s
             increaseMoveNumber(newNumberOfMoves);
             setHints([]);
             setCaptures([]);
+            if (game.turn() === "w") {
+                setTurn("white");
+            } else {
+                setTurn("black");
+            }
         })
 
     }, [])
@@ -258,7 +264,11 @@ const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, s
             let newNumberOfMoves = NumberOfMoveViewing === undefined ? 1 : NumberOfMoveViewing + 1;
             increaseMoveNumber(newNumberOfMoves);
             socket.emit("clientMove", moveObject);
-
+            if (game.turn() === "w") {
+                setTurn("white");
+            } else {
+                setTurn("black");
+            }
             setHints([]);
             setCaptures([]);
         } else {

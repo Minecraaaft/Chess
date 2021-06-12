@@ -5,6 +5,7 @@ import Timer from './Timer'
 const PlayerBar = (props) => {
     let className = props.upper ? "upperPlayerBar" : "lowerPlayerBar";
     let pieces = [];
+    console.log(props.runningTimer + " " + props.upper)
     return (
         <div className={className}>
             <div className="player">
@@ -78,8 +79,8 @@ const PlayerBar = (props) => {
 
                 </div>
             </div>
-
-            <Timer minute={10} second={0} />
+                
+            <Timer minute={10} second={0} runningTimer={props.runningTimer} />
         </div>
     )
 }

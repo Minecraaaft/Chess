@@ -4,11 +4,11 @@ import { useState, useEffect } from 'react'
 const Timer = (props) => {
     const [minutes, setMinutes] = useState(props.minute);
     const [seconds, setSeconds] = useState(props.second);
-    const [running, setRuning] = useState(true);
-
+    const [running, setRuning] = useState(props.runningTimer);
+    
     useEffect(() => {
         let myInterval = setInterval(() => {
-            if (running) {
+            if (props.runningTimer) {
                 if (seconds > 0) {
                     setSeconds(seconds - 1);
                 }
