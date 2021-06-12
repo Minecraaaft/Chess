@@ -12,7 +12,7 @@ const PlayerBar = (props) => {
                 <div className="player-info">
                     <div className="UpperPlayerName">{props.name} ({props.elo})</div>
                     {(() => {
-                        console.log(props.fen)
+                        
                         let queens = 0;
                         let rooks = 0;
                         let bishops = 0;

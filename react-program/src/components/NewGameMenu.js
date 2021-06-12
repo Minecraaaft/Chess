@@ -1,6 +1,6 @@
 import React from 'react'
 
-const NewGameMenu = () => {
+const NewGameMenu = ({socket}) => {
 
     function clickedTime(e) {
         const newTime = e.target.id
@@ -63,6 +63,8 @@ const NewGameMenu = () => {
                 }
                 if (document.getElementById("gameTab") !== undefined)
                     document.getElementById("gameTab").style.display = "block";
+
+                    socket.emit("find room", "anonymous");
 
 
             }}>Play</button>

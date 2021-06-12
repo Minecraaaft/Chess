@@ -2,7 +2,7 @@ import React from 'react'
 import MoveList from './MoveList';
 import NewGameMenu from './NewGameMenu';
 
-const GameMenu = ({ moveList, setMoveNumber, currentMove }) => {
+const GameMenu = ({ moveList, setMoveNumber, currentMove, socket }) => {
     const openTab = (city) => {
         var i;
         var x = document.getElementsByClassName("tab");
@@ -26,7 +26,7 @@ const GameMenu = ({ moveList, setMoveNumber, currentMove }) => {
             </div>
 
             <div id="newGameTab" className="tab">
-                <NewGameMenu />
+                <NewGameMenu socket={socket} />
             </div>
 
             <div id="gameTab" className="tab" style={{ display: 'none' }}>
