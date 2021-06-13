@@ -12,7 +12,7 @@ var backwardsGame = new Chess();
 
 let tilesJustMoved = [];
 
-const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, setChessStatusFen, 
+const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, setChessStatusFen,
     color, startPos, moveMethod, xaxis, yaxis, playerNumber, socket, setTurn }) => {
     // const [game, setGame] = useState(new Chess());
     // const [backwardsGame, setBackwardsGame] = useState(new Chess())
@@ -28,7 +28,7 @@ const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, s
     const [arrows, setArrows] = useState([]);
     const [rightClicked, setRightClicked] = useState(null);
     const [markedTiles, setMarkerTiles] = useState([]);
-    const [numberOfMovements, setNumberOfMovements] = useState(NumberOfMoveViewing ===undefined ? 0 : NumberOfMoveViewing)
+    const [numberOfMovements, setNumberOfMovements] = useState(NumberOfMoveViewing === undefined ? 0 : NumberOfMoveViewing)
 
     const [xAxis, setXAxis] = useState(xaxis);
     const [yAxis, setYAxis] = useState(yaxis);
@@ -43,19 +43,21 @@ const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, s
                 to: moveObject.to,
                 promotion: 'q'
             })
-            console.log("got move message")
 
             updateMoveList(game.history());
-            setChessStatusFen(game.fen());
+            setChessStatusFen(game.fen())
+            loadFen(game.fen());
             let newNumberOfMoves = NumberOfMoveViewing === undefined ? 1 : NumberOfMoveViewing + 1;
             increaseMoveNumber(newNumberOfMoves);
-            setHints([]);
-            setCaptures([]);
             if (game.turn() === "w") {
                 setTurn("white");
             } else {
                 setTurn("black");
             }
+            setHints([]);
+            setCaptures([]);
+            
+            
         })
 
     }, [])
@@ -172,10 +174,10 @@ const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, s
             tilesJustMoved[1] = undefined;
         }
 
-        if (backwardsGame.history().length > 0) {
-            const historyLength = backwardsGame.history().length;
-            tilesJustMoved[0] = backwardsGame.history({ verbose: true })[historyLength - 1].from;
-            tilesJustMoved[1] = backwardsGame.history({ verbose: true })[historyLength - 1].to;
+        if (game.history().length > 0) {
+            const historyLength = game.history().length;
+            tilesJustMoved[0] = game.history({ verbose: true })[historyLength - 1].from;
+            tilesJustMoved[1] = game.history({ verbose: true })[historyLength - 1].to;
 
 
             positionL.forEach(p => {
@@ -300,11 +302,14 @@ const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, s
         }
         if (e.button < 2) {
 
-            setArrows([]);
-            removeMarkedTiles();
+
             const element = e.target;
             const pieceClicked = positionL.find(p => p.position === element.id);
-
+            if (pieceClicked !== undefined && pieceClicked.color !== color) {
+                return
+            }
+            setArrows([]);
+            removeMarkedTiles();
 
             if (lastClicked !== undefined) { // need id only 
                 const chessboard = chessboardRef.current;
@@ -523,7 +528,7 @@ const Chessboard = ({ updateMoveList, NumberOfMoveViewing, increaseMoveNumber, s
             id="chessboard"
             ref={chessboardRef}
         >
-            { }
+            {}
             {(() => {
                 backwardsGame = new Chess()
                 let history = game.history();
