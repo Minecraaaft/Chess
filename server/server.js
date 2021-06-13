@@ -5,9 +5,6 @@ const io = require('socket.io')(3001, {
     }
 });
 
-
-
-
 const Game = require('./game');
 
 const { Chess } = require('chess.js');
@@ -21,6 +18,7 @@ const playerColor = ['white', 'black'];
 // Run when client connects
 io.on('connection', (socket) => {
     console.log("connected")
+    
     socket.on("join server", (username) => {
         
         const user = {
